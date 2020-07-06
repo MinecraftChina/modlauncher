@@ -104,10 +104,33 @@ public class TransformationServiceDecorator {
 
     ITransformationService getService() {
         return service;
+}
+
+    private void IntialNeteaseCoreModManager()
+    {
+        try {
+            //add coremanager
+            Class clazz = Class.forName("net.minecraftforge.coremod.CoreModEngine");
+            Field f = clazz.getDeclaredField("ALLOWED_CLASSES");
+            f.setAccessible(true);
+
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            modifiersField.setAccessible(true);
+            modifiersField.setInt(f, f.getModifiers() & ~Modifier.FINAL);
+
+            List<String> classes = (List<String>)f.get(null);
+            List classlist = new ArrayList(classes);
+            classlist.add("com.netease.mc.mod.coremod.CoreModManager");
+            f.set(null, classlist);
+        } catch (Exception e) {
+            LogManager.getLogger().error(e.toString());
+            return;
+        }
     }
 
     List<Map.Entry<String, Path>> runScan(final Environment environment) {
         LOGGER.debug(MODLAUNCHER,"Beginning scan trigger - transformation service {}", this.service::name);
+        IntialNeteaseCoreModManager();
         final List<Map.Entry<String, Path>> scanResults = this.service.runScan(environment);
         LOGGER.debug(MODLAUNCHER,"End scan trigger - transformation service {}", this.service::name);
         return scanResults;

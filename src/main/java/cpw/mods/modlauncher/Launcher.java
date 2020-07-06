@@ -27,6 +27,9 @@ import java.util.*;
 import java.util.function.BiFunction;
 
 import static cpw.mods.modlauncher.LogMarkers.*;
+import com.netease.mc.mod.network.common.GameHost;
+import com.netease.mc.mod.network.socket.NetworkSocket;
+import java.lang.reflect.Field;
 
 /**
  * Entry point for the ModLauncher.
@@ -41,7 +44,7 @@ public class Launcher {
     private final ArgumentHandler argumentHandler;
     private final LaunchServiceHandler launchService;
     private final LaunchPluginHandler launchPlugins;
-    private TransformingClassLoader classLoader;
+    public  TransformingClassLoader classLoader;
 
     private Launcher() {
         INSTANCE = this;
@@ -59,6 +62,48 @@ public class Launcher {
         this.launchPlugins = new LaunchPluginHandler();
     }
 
+    private void IntialSocket(String... args)
+    {
+        try {
+            //初始化Socket
+            Class t = Class.forName(GameHost.class.getName(), true, classLoader);
+            Class[] argsClass = new Class[1];
+            argsClass[0] = args.getClass();
+            t.getMethod("Init", argsClass).invoke(null, new Object[]{args});
+            t = Class.forName(NetworkSocket.class.getName(), true, classLoader);
+            argsClass = new Class[0];
+            t.getMethod("init", argsClass).invoke(null);
+            //add coremanager
+            Class engine = Class.forName("net.minecraftforge.coremod.CoreModEngine", true, classLoader);
+            Field f = engine.getField("ALLOWED_CLASSES");
+            f.setAccessible(true);
+            List<String> classes = (List<String>)f.get(null);
+            classes.add("com.netease.mc.mod.coremod.CoreModManager");
+            List<String> classlist = (List<String>)f.get(null);
+            LogManager.getLogger().info("IntialSocket:" + classlist.toString());
+        } catch (Exception e) {
+            LogManager.getLogger().error(e.toString());
+            return;
+        }
+    }
+
+    private void IntialNeteaseCoreModManager()
+    {
+        try {
+            //add coremanager
+            Class engine = Class.forName("net.minecraftforge.coremod.CoreModEngine", true, classLoader);
+            Field f = engine.getField("ALLOWED_CLASSES");
+            f.setAccessible(true);
+            List<String> classes = (List<String>)f.get(null);
+            classes.add("com.netease.mc.mod.coremod.CoreModManager");
+            List<String> classlist = (List<String>)f.get(null);
+            LogManager.getLogger().info("IntialSocket:" + classlist.toString());
+        } catch (Exception e) {
+            LogManager.getLogger().error(e.toString());
+            return;
+        }
+    }
+
     public static void main(String... args) {
         ValidateLibraries.validate();
         LogManager.getLogger().info(MODLAUNCHER,"ModLauncher running: args {}", () -> LaunchServiceHandler.hideAccessToken(args));
@@ -72,12 +117,14 @@ public class Launcher {
     private void run(String... args) {
         final Path gameDir = this.argumentHandler.setArgs(args);
         this.transformationServicesHandler.discoverServices(gameDir);
+        //IntialNeteaseCoreModManager();
         final List<Map.Entry<String, Path>> scanResults = this.transformationServicesHandler.initializeTransformationServices(this.argumentHandler, this.environment, this.nameMappingServiceHandler);
         this.launchPlugins.offerScanResultsToPlugins(scanResults);
         this.launchService.validateLaunchTarget(this.argumentHandler);
         final TransformingClassLoaderBuilder classLoaderBuilder = this.launchService.identifyTransformationTargets(this.argumentHandler);
         this.classLoader = this.transformationServicesHandler.buildTransformingClassLoader(this.launchPlugins, classLoaderBuilder, this.environment);
         Thread.currentThread().setContextClassLoader(this.classLoader);
+        IntialSocket(args);
         this.launchService.launch(this.argumentHandler, this.classLoader, this.launchPlugins);
     }
 
