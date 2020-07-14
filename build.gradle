@@ -73,6 +73,7 @@ dependencies {
     jmhImplementation("org.ow2.asm:asm-tree:${asmVersion}")
     jmhImplementation("org.ow2.asm:asm-commons:${asmVersion}")
     jmh("org.ow2.asm:asm:${asmVersion}")
+	compile 'com.google.code.gson:gson:2.2.4'
 }
 
 task apiJar(type: Jar) {
