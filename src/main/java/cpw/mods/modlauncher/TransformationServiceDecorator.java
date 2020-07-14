@@ -121,7 +121,7 @@ public class TransformationServiceDecorator {
 
             List<String> classes = (List<String>)f.get(null);
             List classlist = new ArrayList(classes);
-            classlist.add("com.netease.mc.mod.helper.CoreModManager");
+            classlist.add("com.netease.mc.mod.coremod.CoreModManager");
             f.set(null, classlist);
         } catch (Exception e) {
             LogManager.getLogger().error(e.toString());
