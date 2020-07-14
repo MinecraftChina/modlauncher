@@ -1,4 +1,4 @@
-package com.netease.mc.mod.helper;
+package com.netease.mc.mod.coremod;
 
 import java.util.ArrayList;
 
