@@ -13,6 +13,7 @@ import java.util.Map;
  */
 public class CoreModMethodData {
 	private String className;
+	private String srcMethodName;
 	private String methodName;
 	private String desc;
 	private String oldInterface = null;
@@ -23,14 +24,15 @@ public class CoreModMethodData {
 	private int returnOpcode;
 
 
-	public CoreModMethodData(String _className, String _methodName, String _desc,  String _tranformerClassName)
+	public CoreModMethodData(String _className, String _srcMethodName, String _methodName, String _desc,  String _tranformerClassName)
 	{
-		this(_className,_methodName, _desc, _tranformerClassName, null);
+		this(_className,_srcMethodName, _methodName, _desc, _tranformerClassName, null);
 	}
 
-	public CoreModMethodData(String _className, String _methodName, String _desc,  String _tranformerClassName, String _oldInterface)
+	public CoreModMethodData(String _className, String _srcMethodName, String _methodName, String _desc,  String _tranformerClassName, String _oldInterface)
 	{
 		className = _className;
+		srcMethodName = _srcMethodName;
 		methodName = _methodName;
 		desc = _desc;
 		oldInterface = _oldInterface;
@@ -46,6 +48,14 @@ public class CoreModMethodData {
 
 	public String getDescClassName() {
 		return className.replace('.','/');
+	}
+
+	public String getSrcMethodName(){
+		if (srcMethodName.isEmpty())
+		{
+			return  methodName;
+		}
+		return srcMethodName;
 	}
 
 	public String getMethodName(){
