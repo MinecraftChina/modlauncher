@@ -111,9 +111,6 @@ public class CoreModMethodData {
 					if (params.charAt(i) == 'L') {
 						i = params.indexOf(';', i);
 					}
-					else {
-						i ++ ;
-					}
 					break;
 				case 'D':
 					paramOpcodelist.add(Opcodes.DLOAD);
