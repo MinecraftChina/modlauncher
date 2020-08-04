@@ -148,7 +148,7 @@ public class CoreModManager {
 
 		newMethod.visitInsn(coreModMethodData.getReturnOpcode());
 		classNode.methods.add(newMethod);
-		if (oldInterface != null)
+		if (oldInterface != null && !classNode.interfaces.contains(oldInterface.replace(".", "/")))
 		{
 			classNode.interfaces.add(oldInterface.replace(".", "/"));
 		}
