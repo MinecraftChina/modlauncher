@@ -100,12 +100,7 @@ public interface ITransformer<T> {
         /**
          * Target a field. The {@link ITransformer} T variable must refer to {@link org.objectweb.asm.tree.FieldNode}
          */
-        FIELD,
-        /**
-         * Target a class, before field and method transforms operate. SHOULD ONLY BE USED to "replace" a complete class
-         * The {@link ITransformer} T variable must refer to {@link org.objectweb.asm.tree.ClassNode}
-         */
-        PRE_CLASS;
+        FIELD
     }
 
     /**
@@ -154,16 +149,6 @@ public interface ITransformer<T> {
             return new Target(className, "", "", TargetType.CLASS);
         }
 
-        /**
-         * Convenience method returning a {@link Target} for a class (prior to other loading operations)
-         *
-         * @param className The name of the class
-         * @return A target for the named class
-         */
-        @Nonnull
-        public static Target targetPreClass(String className) {
-            return new Target(className, "", "", TargetType.PRE_CLASS);
-        }
         /**
          * Convenience method return a {@link Target} for a method
          *

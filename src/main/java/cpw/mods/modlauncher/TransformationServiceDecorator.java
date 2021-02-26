@@ -87,16 +87,13 @@ public class TransformationServiceDecorator {
                 }
         ));
         for (Type type : transformersByType.keySet()) {
-            final List<TransformTargetLabel.LabelType> labelTypes = TransformTargetLabel.LabelType.getTypeFor(type);
-            if (labelTypes.isEmpty()) {
-                throw new IllegalArgumentException("Invalid transformer type found");
-            }
+            final TransformTargetLabel.LabelType labelType = TransformTargetLabel.LabelType.getTypeFor(type).orElseThrow(() -> new IllegalArgumentException("Invalid transformer type found"));
             for (ITransformer<?> xform : transformersByType.get(type)) {
                 final Set<ITransformer.Target> targets = xform.targets();
                 if (targets.isEmpty()) continue;
                 final Map<TransformTargetLabel.LabelType, List<TransformTargetLabel>> labelTypeListMap = targets.stream().map(TransformTargetLabel::new).collect(Collectors.groupingBy(TransformTargetLabel::getLabelType));
-                if (labelTypeListMap.keySet().size() > 1 || labelTypes.stream().noneMatch(labelTypeListMap::containsKey)) {
-                    LOGGER.error(MODLAUNCHER,"Invalid target {} for transformer {}", labelTypes, xform);
+                if (labelTypeListMap.keySet().size() > 1 || !labelTypeListMap.keySet().contains(labelType)) {
+                    LOGGER.error(MODLAUNCHER,"Invalid target {} for transformer {}", labelType, xform);
                     throw new IllegalArgumentException("The transformer contains invalid targets");
                 }
                 labelTypeListMap.values().stream().flatMap(Collection::stream).forEach(target -> transformStore.addTransformer(target, xform, service));
@@ -144,7 +141,7 @@ public class TransformationServiceDecorator {
         if (resourcesLocator!=null) {
             final HashSet<String> resNames = new HashSet<>(resourcesLocator.getKey());
             final Set<String> badResourceNames = resNames.stream().
-                    filter(s -> s.endsWith(".class") || resourceNames.contains(s)).
+                    filter(s -> !s.endsWith(".class") || resourceNames.contains(s)).
                     collect(Collectors.toSet());
             if (!badResourceNames.isEmpty()) {
                 badResourceNames.forEach(s -> LOGGER.error("Illegal resource name specified for {} : {}", this.service.name(), s));
