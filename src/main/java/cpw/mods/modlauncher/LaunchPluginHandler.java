@@ -19,7 +19,6 @@
 package cpw.mods.modlauncher;
 
 import cpw.mods.modlauncher.api.IEnvironment;
-import cpw.mods.modlauncher.api.ITransformingClassLoader;
 import cpw.mods.modlauncher.serviceapi.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,8 +28,6 @@ import org.objectweb.asm.tree.*;
 import javax.annotation.*;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static cpw.mods.modlauncher.LogMarkers.*;
 
@@ -63,13 +60,16 @@ public class LaunchPluginHandler {
     }
 
     public EnumMap<ILaunchPluginService.Phase, List<ILaunchPluginService>> computeLaunchPluginTransformerSet(final Type className, final boolean isEmpty, final String reason, final TransformerAuditTrail auditTrail) {
+        Set<ILaunchPluginService> uniqueValues = new HashSet<>();
         final EnumMap<ILaunchPluginService.Phase, List<ILaunchPluginService>> phaseObjectEnumMap = new EnumMap<>(ILaunchPluginService.Phase.class);
-        plugins.forEach((n,pl)-> pl.handlesClass(className, isEmpty, reason).forEach(ph->phaseObjectEnumMap.computeIfAbsent(ph, e->new ArrayList<>()).add(pl)));
-        phaseObjectEnumMap.values()
-                .stream()
-                .flatMap(Collection::stream)
-                .distinct()
-                .forEach(pl->pl.customAuditConsumer(className.getClassName(), strings->auditTrail.addPluginCustomAuditTrail(className.getClassName(), pl, strings)));
+        for (ILaunchPluginService plugin : plugins.values()) {
+            for (ILaunchPluginService.Phase ph : plugin.handlesClass(className, isEmpty, reason)) {
+                phaseObjectEnumMap.computeIfAbsent(ph, e -> new ArrayList<>()).add(plugin);
+                if (uniqueValues.add(plugin)) {
+                    plugin.customAuditConsumer(className.getClassName(), strings -> auditTrail.addPluginCustomAuditTrail(className.getClassName(), plugin, strings));
+                }
+            }
+        }
         LOGGER.debug(LAUNCHPLUGIN, "LaunchPluginService {}", ()->phaseObjectEnumMap);
         return phaseObjectEnumMap;
     }
@@ -78,17 +78,19 @@ public class LaunchPluginHandler {
         plugins.forEach((n,p)->p.addResources(scanResults));
     }
 
-    boolean offerClassNodeToPlugins(final ILaunchPluginService.Phase phase, final List<ILaunchPluginService> plugins, @Nullable final ClassNode node, final Type className, TransformerAuditTrail auditTrail, final String reason) {
-        boolean needsRewriting = false;
+    int offerClassNodeToPlugins(final ILaunchPluginService.Phase phase, final List<ILaunchPluginService> plugins, @Nullable final ClassNode node, final Type className, TransformerAuditTrail auditTrail, final String reason) {
+        int flags = 0;
         for (ILaunchPluginService iLaunchPluginService : plugins) {
             LOGGER.debug(LAUNCHPLUGIN, "LauncherPluginService {} offering transform {}", iLaunchPluginService.name(), className.getClassName());
-            if (iLaunchPluginService.processClass(phase, node, className, reason)) {
+            final int pluginFlags = iLaunchPluginService.processClassWithFlags(phase, node, className, reason);
+            if (pluginFlags != ILaunchPluginService.ComputeFlags.NO_REWRITE) {
                 auditTrail.addPluginAuditTrail(className.getClassName(), iLaunchPluginService, phase);
-                LOGGER.debug(LAUNCHPLUGIN, "LauncherPluginService {} transformed {}", iLaunchPluginService.name(), className.getClassName());
-                needsRewriting = true;
+                LOGGER.debug(LAUNCHPLUGIN, "LauncherPluginService {} transformed {} with class compute flags {}", iLaunchPluginService.name(), className.getClassName(), pluginFlags);
+                flags |= pluginFlags;
             }
         }
-        return needsRewriting;
+        LOGGER.debug(LAUNCHPLUGIN, "Final flags state for {} is {}", className.getClassName(), flags);
+        return flags;
     }
 
     void announceLaunch(final TransformingClassLoader transformerLoader, final Path[] specialPaths) {
