@@ -3,7 +3,7 @@ import java.text.SimpleDateFormat
 plugins {
     id 'org.ajoberstar.grgit' version '4.0.2'
     id 'com.github.ben-manes.versions' version '0.27.0'
-    id 'me.champeau.gradle.jmh' version '0.5.0-rc-1'
+    id 'me.champeau.gradle.jmh' version '0.5.0'
 }
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
@@ -100,8 +100,8 @@ jmh {
     include = [ 'cpw.mods.modlauncher.benchmarks.TransformBenchmark' ]
     benchmarkMode = ['avgt' ]
     profilers = [ 'stack' ]
-    timeOnIteration = '3s'
-    warmup = '3s'
+    timeOnIteration = '5s'
+    warmup = '5s'
     warmupIterations = 3
     iterations = 3
     fork = 3
@@ -113,7 +113,7 @@ tasks['jmh'].dependsOn(clean)
 ext.sharedManifest = manifest {
     attributes(['Specification-Title': 'modlauncher',
                 'Specification-Vendor': 'forge',
-                'Specification-Version': '7.0', // We are version 7 of the modlauncher specification
+                'Specification-Version': '4.0', // We are version 4 of the modlauncher specification
                 'Implementation-Title': project.name,
                 'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${grgit.branch.current().getName()}.${grgit.head().abbreviatedId}",
                 'Implementation-Vendor' :'forge',
@@ -124,7 +124,7 @@ ext.sharedManifest = manifest {
             'cpw/mods/modlauncher/api/')
     attributes(['Specification-Title': 'modlauncherserviceapi',
                 'Specification-Vendor': 'forge',
-                'Specification-Version': '7.0', // We are version 7 of the modlauncher serviceapi specification
+                'Specification-Version': '4.0', // We are version 4 of the modlauncher serviceapi specification
                 "Implementation-Title": project.name,
                 'Implementation-Version': "${project.version}+${System.getenv('BUILD_NUMBER')?:0}+${grgit.branch.current().getName()}.${grgit.head().abbreviatedId}",
                 'Implementation-Vendor' :'forge',
