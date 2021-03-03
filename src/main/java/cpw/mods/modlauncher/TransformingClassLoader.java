@@ -55,7 +55,7 @@ public class TransformingClassLoader extends ClassLoader implements ITransformin
     );
     private final ClassTransformer classTransformer;
     private final DelegatedClassLoader delegatedClassLoader;
-    private final URL[] specialJars;
+    private URL[] specialJars;
     private final Function<URLConnection, Manifest> manifestFinder;
     private Function<String,Enumeration<URL>> resourceFinder;
     private Predicate<String> targetPackageFilter;
@@ -63,10 +63,12 @@ public class TransformingClassLoader extends ClassLoader implements ITransformin
     public TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, Path... paths) {
         this.classTransformer = new ClassTransformer(transformStore, pluginHandler, this);
         this.specialJars = Arrays.stream(paths).map(rethrowFunction(path->path.toUri().toURL())).toArray(URL[]::new);
+        this.addAuthLib();
         this.delegatedClassLoader = new DelegatedClassLoader(this);
         this.targetPackageFilter = s -> SKIP_PACKAGE_PREFIXES.stream().noneMatch(s::startsWith);
         this.resourceFinder = this::locateResource;
         this.manifestFinder = input -> this.findManifest(input).orElse(null);
+
     }
 
     TransformingClassLoader(TransformStore transformStore, LaunchPluginHandler pluginHandler, TransformingClassLoaderBuilder builder, final Environment environment) {
@@ -74,11 +76,26 @@ public class TransformingClassLoader extends ClassLoader implements ITransformin
         TransformerAuditTrail tat = new TransformerAuditTrail();
         environment.computePropertyIfAbsent(IEnvironment.Keys.AUDITTRAIL.get(), v->tat);
         this.classTransformer = new ClassTransformer(transformStore, pluginHandler, this, tat);
-        this.specialJars = builder.getSpecialJarsAsURLs();
+        this.specialJars =  builder.getSpecialJarsAsURLs();
+        this.addAuthLib();
         this.delegatedClassLoader = new DelegatedClassLoader(this);
         this.targetPackageFilter = s -> SKIP_PACKAGE_PREFIXES.stream().noneMatch(s::startsWith);
         this.resourceFinder = EnumerationHelper.mergeFunctors(builder.getResourceEnumeratorLocator(), this::locateResource);
         this.manifestFinder = alternate(builder.getManifestLocator(), this::findManifest);
+    }
+
+    private void addAuthLib()
+    {
+        ArrayList<URL> merge = new ArrayList<>(Arrays.asList(this.specialJars));
+        URL[] urls = ((URLClassLoader) getClass().getClassLoader()).getURLs();
+        for(URL url : urls)
+        {
+            if (url.getPath().indexOf("authlib") > 0)
+            {
+                merge.add(url);
+            }
+        }
+        this.specialJars = merge.toArray(new URL[0]);
     }
 
     private static <I, R> Function<I,R> alternate(@Nullable Function<I, Optional<R>> first, @Nullable Function<I, Optional<R>> second) {
